@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Estagiários</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F8F9FB;
+    --surface:#FFFFFF;
+    --ink:#2A2A2A;
+    --ink-soft:#6B7280;
+    --line:#E5E7EB;
+    --accent:#FF1F2D;
+    --accent-hover:#E11B22;
+    --accent-soft:#FFE5E7;
+    --accent-light:#FF5A66;
+    --ok-fg:#16A34A;
+    --ok-bg:#DCFCE7;
+    --warn-fg:#D97706;
+    --warn-bg:#FEF3C7;
+    --danger-fg:#DC2626;
+    --danger-bg:#FEE2E2;
+    --neutral-fg:#6B7280;
+    --neutral-bg:#F3F4F6;
+    --radius:12px;
+    --shadow:0 4px 20px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    line-height:1.5;
+  }
+  h1,h2,h3{font-family:'Sora',sans-serif; margin:0;}
+
+  /* ============ LOGIN ============ */
+  .login-page{
+    display:flex;
+    min-height:100vh;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:linear-gradient(135deg, #FF1F2D 0%, #E11B22 50%, #C4171E 100%);
+  }
+  .login-container{
+    background:var(--surface);
+    border-radius:20px;
+    padding:48px 40px;
+    width:100%;
+    max-width:420px;
+    box-shadow:0 30px 60px rgba(0,0,0,.3);
+    border:1px solid rgba(255,255,255,.1);
+  }
+  .login-brand{
+    text-align:center;
+    margin-bottom:36px;
+  }
+  .login-brand .logo-icon{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:64px;
+    height:64px;
+    background:var(--accent);
+    border-radius:16px;
+    margin-bottom:16px;
+    font-size:28px;
+    font-weight:800;
+    color:#fff;
+    font-family:'Sora',sans-serif;
+  }
+  .login-brand h1{
+    font-size:24px;
+    font-weight:700;
+    color:var(--ink);
+    letter-spacing:-.5px;
+  }
+  .login-brand .subtitle{
+    color:var(--ink-soft);
+    font-size:13px;
+    margin-top:4px;
+    letter-spacing:.3px;
+  }
+  .login-form label{
+    display:block;
+    color:var(--ink-soft);
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.5px;
+    margin-bottom:6px;
+  }
+  .login-form input{
+    width:100%;
+    padding:12px 16px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--bg);
+    color:var(--ink);
+    font-size:14px;
+    outline:none;
+    transition:all .3s;
+    font-family:'Inter',sans-serif;
+  }
+  .login-form input::placeholder{
+    color:var(--ink-soft);
+    opacity:.5;
+  }
+  .login-form input:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(255,31,45,.15);
+  }
+  .login-form .field-group{
+    margin-bottom:18px;
+  }
+  .login-btn{
+    width:100%;
+    padding:14px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .3s;
+    font-family:'Inter',sans-serif;
+    margin-top:8px;
+  }
+  .login-btn:hover{
+    background:var(--accent-hover);
+    transform:translateY(-1px);
+    box-shadow:0 8px 25px rgba(255,31,45,.35);
+  }
+  .login-error{
+    color:var(--accent);
+    font-size:13px;
+    text-align:center;
+    margin-top:12px;
+    min-height:20px;
+    opacity:0;
+    transition:opacity .3s;
+  }
+  .login-error.show{
+    opacity:1;
+  }
+  .login-footer{
+    text-align:center;
+    margin-top:24px;
+    color:var(--ink-soft);
+    font-size:11px;
+    letter-spacing:.5px;
+    opacity:.6;
+  }
+
+  /* ============ MAIN APP ============ */
+  .app-container{
+    display:none;
+  }
+  .app-container.active{
+    display:block;
+  }
+
+  .wrap{
+    max-width:1280px;
+    margin:0 auto;
+    padding:28px 24px 60px;
+  }
+
+  header.top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+    background:linear-gradient(135deg, #FF5A66 0%, #FF1F2D 50%, #E11B22 100%);
+    padding:24px;
+    border-radius:16px;
+  }
+  .title-block .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.12em;
+    color:#FFFFFF;
+    opacity:.85;
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .title-block h1{
+    font-size:26px;
+    font-weight:700;
+    color:#FFFFFF;
+  }
+  .header-right{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .ref-date{
+    background:rgba(255,255,255,.15);
+    border:1px solid rgba(255,255,255,.2);
+    border-radius:var(--radius);
+    padding:8px 14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .ref-date label{
+    font-size:12px;
+    color:rgba(255,255,255,.8);
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .ref-date input{
+    border:none;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:#fff;
+    outline:none;
+    background:transparent;
+    padding:2px 0;
+    max-width:120px;
+  }
+  .ref-date input::-webkit-calendar-picker-indicator{
+    filter:invert(1);
+  }
+  .user-info{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:4px 12px 4px 8px;
+    background:rgba(255,255,255,.15);
+    border-radius:30px;
+    border:1px solid rgba(255,255,255,.15);
+  }
+  .user-info .avatar{
+    width:28px;
+    height:28px;
+    border-radius:50%;
+    background:#fff;
+    color:var(--accent);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
+    font-weight:700;
+  }
+  .user-info .user-name{
+    color:rgba(255,255,255,.9);
+    font-size:12px;
+    font-weight:500;
+  }
+  .user-info .logout-btn{
+    background:none;
+    border:none;
+    color:rgba(255,255,255,.5);
+    cursor:pointer;
+    font-size:14px;
+    padding:0 4px;
+    transition:color .2s;
+  }
+  .user-info .logout-btn:hover{
+    color:#fff;
+  }
+
+  .sync-status{
+    font-size:12px;
+    color:rgba(255,255,255,.7);
+    padding:4px 12px;
+    background:rgba(255,255,255,.1);
+    border-radius:20px;
+    border:1px solid rgba(255,255,255,.1);
+    white-space:nowrap;
+  }
+  .sync-status.success{color:#4ADE80; border-color:rgba(74,222,128,.2); background:rgba(74,222,128,.08);}
+  .sync-status.error{color:#F87171; border-color:rgba(248,113,113,.2); background:rgba(248,113,113,.08);}
+
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:12px;
+    margin-bottom:22px;
+  }
+  .card{
+    background:var(--surface);
+    border:none;
+    border-radius:var(--radius);
+    padding:14px 16px;
+    position:relative;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+    border:1px solid var(--line);
+  }
+  .card .num{
+    font-family:'Sora',sans-serif;
+    font-size:26px;
+    font-weight:700;
+  }
+  .card .lbl{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:2px;
+    font-weight:600;
+    letter-spacing:.02em;
+  }
+  .card::before{
+    content:'';
+    position:absolute;
+    left:0;
+    top:0;
+    bottom:0;
+    width:4px;
+  }
+  .card.c-ok::before{background:var(--ok-fg);}
+  .card.c-warn::before{background:var(--warn-fg);}
+  .card.c-danger::before{background:var(--danger-fg);}
+  .card.c-neutral::before{background:var(--neutral-fg);}
+  .card.c-total::before{background:var(--accent);}
+
+  .toolbar{
+    display:flex;
+    gap:10px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+    align-items:center;
+    background:var(--surface);
+    padding:12px 16px;
+    border-radius:var(--radius);
+    border:1px solid var(--line);
+  }
+  .toolbar input[type=text]{
+    flex:1;
+    min-width:180px;
+    padding:9px 14px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--bg);
+    font-size:13px;
+    outline:none;
+    font-family:'Inter',sans-serif;
+  }
+  .toolbar input[type=text]:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(255,31,45,.1);
+  }
+  .toolbar select{
+    padding:9px 12px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--bg);
+    font-size:13px;
+    outline:none;
+    font-family:'Inter',sans-serif;
+  }
+  .toolbar select:focus{
+    border-color:var(--accent);
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+  }
+  .btn{
+    border:none;
+    border-radius:var(--radius);
+    padding:9px 16px;
+    font-weight:600;
+    font-size:13px;
+    transition:all .2s;
+  }
+  .btn-primary{
+    background:var(--accent);
+    color:#fff;
+  }
+  .btn-primary:hover{
+    background:var(--accent-hover);
+    transform:scale(1.02);
+  }
+  .btn-ghost{
+    background:var(--surface);
+    color:var(--ink);
+    border:1px solid var(--line);
+  }
+  .btn-ghost:hover{
+    border-color:var(--accent);
+    color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .btn-danger{
+    background:var(--danger-fg);
+    color:#fff;
+  }
+  .btn-danger:hover{
+    background:#B91C1C;
+  }
+
+  .table-wrapper{
+    background:var(--surface);
+    border-radius:var(--radius);
+    border:1px solid var(--line);
+    overflow-x:auto;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+  }
+  thead{
+    background:var(--accent);
+  }
+  thead th{
+    text-align:left;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:#FFFFFF;
+    font-weight:700;
+    padding:10px 12px;
+    border-bottom:none;
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FAFBFC;}
+  td.nome{font-weight:600;}
+  td.muted{
+    color:var(--ink-soft);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+  }
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:3px 10px;
+    border-radius:999px;
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:.02em;
+  }
+  .pill::before{
+    content:'';
+    width:6px;
+    height:6px;
+    border-radius:50%;
+  }
+  .pill.ok{background:var(--ok-bg); color:var(--ok-fg);} .pill.ok::before{background:var(--ok-fg);}
+  .pill.warn{background:var(--warn-bg); color:var(--warn-fg);} .pill.warn::before{background:var(--warn-fg);}
+  .pill.danger{background:var(--danger-bg); color:var(--danger-fg);} .pill.danger::before{background:var(--danger-fg);}
+  .pill.neutral{background:var(--neutral-bg); color:var(--neutral-fg);} .pill.neutral::before{background:var(--neutral-fg);}
+
+  .row-actions{display:flex; gap:6px;}
+  .icon-btn{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:4px 10px;
+    font-size:12px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:all .2s;
+  }
+  .icon-btn:hover{
+    color:var(--accent);
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+
+  .empty{
+    padding:50px 20px;
+    text-align:center;
+    color:var(--ink-soft);
+  }
+  .empty .big{font-size:32px; margin-bottom:8px;}
+
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(20,24,38,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--surface);
+    border-radius:14px;
+    width:100%;
+    max-width:680px;
+    max-height:90vh;
+    overflow-y:auto;
+    padding:26px 28px;
+    box-shadow:0 30px 60px rgba(0,0,0,.25);
+  }
+  .modal h2{
+    font-size:19px;
+    margin-bottom:18px;
+    color:var(--accent);
+  }
+  .grid2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  .field{margin-bottom:14px;}
+  .field.full{grid-column:1/-1;}
+  .field label{
+    display:block;
+    font-size:12px;
+    font-weight:700;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:9px 11px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:13.5px;
+    font-family:'Inter',sans-serif;
+    outline:none;
+    color:var(--ink);
+    background:var(--bg);
+    transition:all .2s;
+  }
+  .field input:focus, .field select:focus{
+    border-color:var(--accent);
+    background:var(--surface);
+    box-shadow:0 0 0 3px rgba(255,31,45,.1);
+  }
+  .section-divider{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--accent);
+    margin:18px 0 10px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:18px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .modal-actions .btn{margin-left:4px;}
+
+  .legend{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    margin:14px 0 18px;
+    padding:10px 16px;
+    background:var(--surface);
+    border-radius:var(--radius);
+    border:1px solid var(--line);
+  }
+  .legend span{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .legend i{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    display:inline-block;
+  }
+
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:#D6DAE2;border-radius:6px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+
+  .loading-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(255,255,255,.85);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    flex-direction:column;
+    gap:16px;
+    font-weight:600;
+    color:var(--ink-soft);
+  }
+  .loading-overlay.show{display:flex;}
+  .spinner{
+    width:36px;
+    height:36px;
+    border:3px solid var(--line);
+    border-top-color:var(--accent);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .toast{
+    position:fixed;
+    bottom:24px;
+    right:24px;
+    padding:12px 20px;
+    border-radius:var(--radius);
+    color:#fff;
+    font-weight:600;
+    z-index:200;
+    transform:translateY(80px);
+    opacity:0;
+    transition:all .4s ease;
+    box-shadow:0 10px 30px rgba(0,0,0,.2);
+    font-size:13px;
+  }
+  .toast.show{transform:translateY(0); opacity:1;}
+  .toast.success{background:#16A34A;}
+  .toast.error{background:var(--danger-fg);}
+
+  @media (max-width: 900px){
+    .cards{grid-template-columns:repeat(2,1fr);}
+    .grid2{grid-template-columns:1fr;}
+    .table-wrapper table, .table-wrapper thead, .table-wrapper tbody, .table-wrapper th, .table-wrapper td, .table-wrapper tr{display:block;}
+    .table-wrapper thead{display:none;}
+    .table-wrapper tbody tr{border-bottom:6px solid var(--bg); padding:8px 0; display:block;}
+    .table-wrapper tbody td{white-space:normal; border-bottom:none; display:flex; justify-content:space-between; gap:10px; padding:6px 14px;}
+    .table-wrapper tbody td::before{content:attr(data-label); font-weight:700; color:var(--ink-soft); font-size:11px;}
+    .header-right{width:100%; justify-content:space-between;}
+    .ref-date{flex:1;}
+    .toolbar{flex-direction:column; align-items:stretch;}
+    .toolbar input[type=text]{min-width:auto;}
+    .login-container{padding:32px 24px;}
+  }
+  @media (max-width: 500px){
+    .cards{grid-template-columns:1fr 1fr;}
+    .wrap{padding:16px 12px;}
+    .modal{padding:20px;}
+    header.top{padding:16px;}
+    .login-container{padding:24px 16px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN PAGE ============ -->
+<div class="login-page" id="loginPage">
+  <div class="login-container">
+    <div class="login-brand">
+      <div class="logo-icon">CE</div>
+      <h1>Controle de Estagiários</h1>
+      <div class="subtitle">RH · Programa de Estágio</div>
+    </div>
+    <form class="login-form" id="loginForm" autocomplete="off">
+      <div class="field-group">
+        <label>E-mail</label>
+        <input type="email" id="loginEmail" placeholder="Digite seu e-mail">
+      </div>
+      <div class="field-group">
+        <label>Senha</label>
+        <input type="password" id="loginPassword" placeholder="Digite sua senha">
+      </div>
+      <button type="submit" class="login-btn">Entrar</button>
+      <div class="login-error" id="loginError">E-mail ou senha incorretos</div>
+    </form>
+    <div class="login-footer">Sistema interno · RH</div>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div class="app-container" id="appContainer">
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div id="loadingText">Sincronizando com Google Sheets...</div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="wrap">
+
+    <header class="top">
+      <div class="title-block">
+        <div class="eyebrow">RH · Programa de Estágio</div>
+        <h1>Controle de Estagiários</h1>
+      </div>
+      <div class="header-right">
+        <div class="ref-date">
+          <label for="refDate">Data de referência</label>
+          <input type="date" id="refDate">
+        </div>
+        <span class="sync-status" id="syncStatus">Sincronizado</span>
+        <div class="user-info">
+          <div class="avatar" id="userAvatar">DP</div>
+          <span class="user-name" id="userName">dp@rededecisao.com.br</span>
+          <button class="logout-btn" id="logoutBtn" title="Sair">✕</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="cards" id="cards"></div>
+
+    <div class="legend">
+      <span><i style="background:var(--ok-fg)"></i> OK — contrato em dia</span>
+      <span><i style="background:var(--warn-fg)"></i> RENOVAR — iniciar renovação</span>
+      <span><i style="background:var(--danger-fg)"></i> DEMITIR/EFETIVAR — decisão necessária</span>
+      <span><i style="background:var(--neutral-fg)"></i> SEM CONTRATO — sem início de contrato cadastrado</span>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Buscar por nome, CPF, função ou unidade...">
+      <select id="filterStatus">
+        <option value="">Todos os status</option>
+        <option value="OK">OK</option>
+        <option value="RENOVAR">RENOVAR</option>
+        <option value="DEMITIR/EFETIVAR">DEMITIR/EFETIVAR</option>
+        <option value="SEM CONTRATO">SEM CONTRATO</option>
+      </select>
+      <button class="btn btn-ghost" id="btnSync">Sincronizar</button>
+      <button class="btn btn-ghost" id="btnExport">Exportar</button>
+      <button class="btn btn-primary" id="btnNew">+ Novo</button>
+    </div>
+
+    <div class="table-wrapper">
+      <div id="tableHolder"></div>
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h2 id="modalTitle">Novo estagiário</h2>
+      <form id="form">
+        <input type="hidden" id="recId">
+        <div class="grid2">
+          <div class="field full"><label>Nome</label><input type="text" id="nome" required></div>
+          <div class="field"><label>CPF</label><input type="text" id="cpf" placeholder="000.000.000-00"></div>
+          <div class="field"><label>Data de admissão</label><input type="date" id="dataAdmissao"></div>
+          <div class="field"><label>Função</label><input type="text" id="funcao"></div>
+          <div class="field"><label>Unidade</label><input type="text" id="unidade"></div>
+          <div class="field"><label>Status do estagiário</label>
+            <select id="statusEstagiario">
+              <option value="">Selecionar</option>
+              <option value="ATIVO">Ativo</option>
+              <option value="DEMITIDO">Demitido</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-divider">Contrato</div>
+        <div class="grid2">
+          <div class="field"><label>Início do contrato</label><input type="date" id="inicioContrato"></div>
+          <div class="field"><label>Vencimento do contrato</label><input type="date" id="vencimentoContrato"></div>
+          <div class="field"><label>Início renovação</label><input type="date" id="inicioRenovacao"></div>
+          <div class="field"><label>Fim renovação</label><input type="date" id="fimRenovacao"></div>
+          <div class="field full"><label>Término do curso (MM/AAAA)</label>
+            <input type="month" id="terminoCurso">
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-danger" id="btnDelete" style="display:none; margin-right:auto;">Excluir</button>
+          <button type="button" class="btn btn-ghost" id="btnCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// LOGIN
+// ============================================================
+const LOGIN_CREDENTIALS = {
+  email: 'dp@rededecisao.com.br',
+  password: 'Rede2026@'
+};
+
+function doLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+
+  if (email === LOGIN_CREDENTIALS.email && password === LOGIN_CREDENTIALS.password) {
+    errorEl.classList.remove('show');
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('appContainer').classList.add('active');
+    document.getElementById('userName').textContent = email;
+    const initials = email.split('@')[0].substring(0,2).toUpperCase();
+    document.getElementById('userAvatar').textContent = initials;
+    initApp();
+  } else {
+    errorEl.classList.add('show');
+    document.getElementById('loginPassword').value = '';
+  }
+}
+
+document.getElementById('loginForm').addEventListener('submit', doLogin);
+
+document.getElementById('loginPassword').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+});
+document.getElementById('loginEmail').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+});
+
+// ============================================================
+// LOGOUT
+// ============================================================
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  if (confirm('Deseja realmente sair?')) {
+    document.getElementById('appContainer').classList.remove('active');
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginError').classList.remove('show');
+  }
+});
+
+// ============================================================
+// CONFIGURACAO
+// ============================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIv7Nzxdxbd9JhaUS95Scz1Sz_weg_Pdl6xCBXs0FuBxNyy5nSdXlpsmldx5101voo/exec';
+
+const FIELD_MAPPING = {
+  'Id': 'id',
+  'Nome': 'nome',
+  'CPF': 'cpf',
+  'Data Admissão': 'dataAdmissao',
+  'Função': 'funcao',
+  'Unidade': 'unidade',
+  'Inicio do Contrato': 'inicioContrato',
+  'Vencimento do Contrato': 'vencimentoContrato',
+  'Início renovação do contrato': 'inicioRenovacao',
+  'Fim renovação do contrato': 'fimRenovacao',
+  'Término do curso': 'terminoCurso',
+  'Status do contrato': 'statusContrato',
+  'Status do estagiário': 'statusEstagiario'
+};
+
+const STORAGE_KEY = 'estagiarios-data';
+let records = [];
+let editingId = null;
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(message, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.className = 'toast ' + type + ' show';
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => toast.classList.remove('show'), 4000);
+}
+
+function showLoading(text) {
+  document.getElementById('loadingOverlay').classList.add('show');
+  document.getElementById('loadingText').textContent = text || 'Carregando...';
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+// ============================================================
+// FUNCOES DE DATA
+// ============================================================
+function parseDateToISO(dateStr) {
+  if (!dateStr) return '';
+  const str = String(dateStr).trim();
+  if (!str) return '';
+
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})T/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1]);
+    const month = parseInt(isoMatch[2]);
+    const day = parseInt(isoMatch[3]);
+    const date = new Date(year, month - 1, day);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0];
+    }
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (/^\d{4}-\d{2}$/.test(str)) return str;
+
+  const match = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (match) {
+    const day = parseInt(match[1]);
+    const month = parseInt(match[2]) - 1;
+    const year = parseInt(match[3]);
+    const date = new Date(year, month, day);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0];
+    }
+  }
+
+  return '';
+}
+
+function formatDateBR(dateStr) {
+  if (!dateStr) return '—';
+  if (/^\d{4}-\d{2}$/.test(dateStr)) {
+    const [year, month] = dateStr.split('-');
+    return `${month}/${year}`;
+  }
+  const iso = parseDateToISO(dateStr);
+  if (!iso) return '—';
+  const [year, month, day] = iso.split('-').map(Number);
+  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+}
+
+function fmt(str) {
+  if (!str) return '—';
+  if (/^\d{4}-\d{2}$/.test(str)) {
+    const [year, month] = str.split('-');
+    return `${month}/${year}`;
+  }
+  if (str.includes('T')) return formatDateBR(str);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [year, month, day] = str.split('-').map(Number);
+    return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+  }
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) return d.toLocaleDateString('pt-BR');
+  return '—';
+}
+
+function toDate(str) {
+  if (!str) return null;
+  if (/^\d{4}-\d{2}$/.test(str)) {
+    const [year, month] = str.split('-').map(Number);
+    return new Date(year, month - 1, 1);
+  }
+  const isoMatch = String(str).match(/^(\d{4})-(\d{2})-(\d{2})T/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1]);
+    const month = parseInt(isoMatch[2]) - 1;
+    const day = parseInt(isoMatch[3]);
+    return new Date(year, month, day);
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDateForInput(dateStr) {
+  if (!dateStr) return '';
+  if (/^\d{4}-\d{2}$/.test(dateStr)) return dateStr;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const isoMatch = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})T/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  const parsed = parseDateToISO(dateStr);
+  if (parsed) return parsed;
+  return '';
+}
+
+function addDays(d, days){ const r = new Date(d); r.setDate(r.getDate()+days); return r; }
+function firstOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+function sameMonth(d1, d2){ return d1.getFullYear()===d2.getFullYear() && d1.getMonth()===d2.getMonth(); }
+
+// ============================================================
+// STATUS
+// ============================================================
+function calcularStatus(rec, refStr){
+  const statusEstagiario = (rec.statusEstagiario||'').toUpperCase();
+  if(statusEstagiario === 'DEMITIDO') return '';
+  if(!statusEstagiario) return '';
+  if(!rec.inicioContrato) return 'SEM CONTRATO';
+
+  const N = toDate(refStr);
+  const G = toDate(rec.inicioContrato);
+  const H = rec.vencimentoContrato ? toDate(rec.vencimentoContrato) : null;
+  const I = rec.inicioRenovacao || null;
+  const J = rec.fimRenovacao ? toDate(rec.fimRenovacao) : null;
+  const K = rec.terminoCurso ? toDate(rec.terminoCurso) : null;
+
+  if (!N) return 'SEM CONTRATO';
+
+  if(K){
+    const K61 = addDays(K, -61);
+    if(firstOfMonth(K61) <= firstOfMonth(N)) return 'DEMITIR/EFETIVAR';
+  }
+
+  if(H && H <= addDays(N, 31)){
+    if(G <= addDays(N, -700)) return 'DEMITIR/EFETIVAR';
+    if(!I) return 'RENOVAR';
+    if(!J) return 'DEMITIR/EFETIVAR';
+    const cond1 = J <= addDays(G, 730);
+    const cond2 = sameMonth(J, N);
+    if(cond1 && cond2) return 'DEMITIR/EFETIVAR';
+    if(J < addDays(N, 31)) return 'DEMITIR/EFETIVAR';
+    return 'OK';
+  }
+  return 'OK';
+}
+
+function pillClass(status){
+  if(status === 'OK') return 'ok';
+  if(status === 'RENOVAR') return 'warn';
+  if(status === 'DEMITIR/EFETIVAR') return 'danger';
+  if(status === 'SEM CONTRATO') return 'neutral';
+  return 'neutral';
+}
+
+// ============================================================
+// API
+// ============================================================
+async function fetchFromSheet() {
+  try {
+    const response = await fetch(API_URL);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Erro ao buscar dados:', error);
+    throw error;
+  }
+}
+
+async function sendToSheet(action, data) {
+  try {
+    const payload = { action: action, data: data };
+    await fetch(API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return true;
+  } catch (error) {
+    console.error('Erro ao enviar para planilha:', error);
+    throw error;
+  }
+}
+
+// ============================================================
+// MAPEAMENTO
+// ============================================================
+function mapSheetData(sheetData) {
+  if (Array.isArray(sheetData) && sheetData.length > 0) {
+    if (sheetData[0].nome !== undefined) return sheetData;
+    if (typeof sheetData[0] === 'object') {
+      return sheetData.map(row => {
+        const obj = {};
+        Object.keys(row).forEach(key => {
+          const mappedField = FIELD_MAPPING[key.trim()];
+          if (mappedField) {
+            const value = row[key];
+            obj[mappedField] = mappedField === 'id' ? String(value || '') : (value || '');
+          }
+        });
+        if (!obj.id) obj.id = 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+        return obj;
+      });
+    }
+  }
+  return [];
+}
+
+// ============================================================
+// SYNC
+// ============================================================
+async function syncWithSheet() {
+  const syncStatus = document.getElementById('syncStatus');
+  
+  showLoading('Sincronizando com Google Sheets...');
+  syncStatus.textContent = 'Sincronizando...';
+  syncStatus.className = 'sync-status';
+
+  try {
+    const data = await fetchFromSheet();
+    const mappedData = mapSheetData(data);
+    
+    if (mappedData && mappedData.length > 0) {
+      records = mappedData;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); } catch(e) {}
+
+      syncStatus.textContent = 'Sincronizado (' + records.length + ' registros)';
+      syncStatus.className = 'sync-status success';
+      render();
+      showToast('Sincronizado com sucesso!');
+    } else {
+      const hasLocal = loadLocalData();
+      if (hasLocal && records.length > 0) {
+        syncStatus.textContent = 'Cache (' + records.length + ' registros)';
+        syncStatus.className = 'sync-status error';
+        render();
+      } else {
+        syncStatus.textContent = 'Sem dados';
+        syncStatus.className = 'sync-status error';
+        render();
+        showToast('Nenhum dado encontrado na planilha', 'error');
+      }
+    }
+
+  } catch (error) {
+    console.error('Erro na sincronização:', error);
+    syncStatus.textContent = 'Erro';
+    syncStatus.className = 'sync-status error';
+    
+    const hasLocal = loadLocalData();
+    if (hasLocal && records.length > 0) {
+      render();
+      showToast('Usando dados em cache', 'error');
+    } else {
+      showToast('Erro ao sincronizar: ' + error.message, 'error');
+    }
+  } finally {
+    hideLoading();
+  }
+}
+
+// ============================================================
+// STORAGE
+// ============================================================
+function loadLocalData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { records = JSON.parse(raw); return true; }
+  } catch(e) {}
+  return false;
+}
+
+function saveLocalData() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); } catch(e) {}
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function exportData(){
+  const blob = new Blob([JSON.stringify(records, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'estagiarios-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Exportação concluída!');
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function getRefDate(){ return document.getElementById('refDate').value; }
+
+function render(){
+  const ref = getRefDate();
+  const search = document.getElementById('search').value.trim().toLowerCase();
+  const filter = document.getElementById('filterStatus').value;
+
+  const enriched = records.map(r => ({...r, _status: calcularStatus(r, ref)}));
+
+  const counts = {OK:0, RENOVAR:0, 'DEMITIR/EFETIVAR':0, 'SEM CONTRATO':0};
+  enriched.forEach(r => { if(counts[r._status] !== undefined) counts[r._status]++; });
+  
+  document.getElementById('cards').innerHTML = `
+    <div class="card c-total"><div class="num">${enriched.length}</div><div class="lbl">TOTAL CADASTRADOS</div></div>
+    <div class="card c-ok"><div class="num">${counts.OK}</div><div class="lbl">OK</div></div>
+    <div class="card c-warn"><div class="num">${counts.RENOVAR}</div><div class="lbl">RENOVAR</div></div>
+    <div class="card c-danger"><div class="num">${counts['DEMITIR/EFETIVAR']}</div><div class="lbl">DEMITIR / EFETIVAR</div></div>
+    <div class="card c-neutral"><div class="num">${counts['SEM CONTRATO']}</div><div class="lbl">SEM CONTRATO</div></div>
+  `;
+
+  let list = enriched.filter(r => {
+    if(filter && r._status !== filter) return false;
+    if(search){
+      const hay = `${r.nome||''} ${r.cpf||''} ${r.funcao||''} ${r.unidade||''}`.toLowerCase();
+      if(!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const holder = document.getElementById('tableHolder');
+  if(list.length === 0){
+    holder.innerHTML = `<div class="empty">
+      <div class="big">—</div>
+      <div>${records.length === 0 ? 'Nenhum estagiário cadastrado ainda. Clique em "Novo estagiário" para começar.' : 'Nenhum registro encontrado para esse filtro.'}</div>
+    </div>`;
+    return;
+  }
+
+  list.sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
+
+  holder.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th><th>CPF</th><th>Função</th><th>Unidade</th>
+          <th>Vencimento contrato</th><th>Término curso</th><th>Status do estagiário</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(r => `
+          <tr data-id="${r.id}">
+            <td class="nome" data-label="Nome">${escapeHtml(r.nome||'—')}</td>
+            <td class="muted" data-label="CPF">${escapeHtml(r.cpf||'—')}</td>
+            <td data-label="Função">${escapeHtml(r.funcao||'—')}</td>
+            <td data-label="Unidade">${escapeHtml(r.unidade||'—')}</td>
+            <td class="muted" data-label="Vencimento">${fmt(r.vencimentoContrato)}</td>
+            <td class="muted" data-label="Término curso">${fmt(r.terminoCurso)}</td>
+            <td data-label="Status">${r._status ? `<span class="pill ${pillClass(r._status)}">${r._status}</span>` : '<span class="pill neutral">—</span>'}</td>
+            <td data-label="">
+              <div class="row-actions">
+                <button class="icon-btn" onclick="openEdit('${r.id}')">Editar</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ============================================================
+// MODAL
+// ============================================================
+const overlay = document.getElementById('overlay');
+const form = document.getElementById('form');
+const fieldIds = ['nome','cpf','dataAdmissao','funcao','unidade','statusEstagiario','inicioContrato','vencimentoContrato','inicioRenovacao','fimRenovacao','terminoCurso'];
+const dateFields = ['dataAdmissao','inicioContrato','vencimentoContrato','inicioRenovacao','fimRenovacao'];
+const monthField = 'terminoCurso';
+
+function openNew(){
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Novo estagiário';
+  document.getElementById('btnDelete').style.display = 'none';
+  fieldIds.forEach(id => document.getElementById(id).value = '');
+  overlay.classList.add('show');
+}
+
+function openEdit(id){
+  const searchId = String(id);
+  const rec = records.find(r => String(r.id) === searchId);
+  
+  if(!rec) {
+    showToast('Registro não encontrado. ID: ' + searchId, 'error');
+    return;
+  }
+  
+  editingId = rec.id;
+  document.getElementById('modalTitle').textContent = 'Editar estagiário';
+  document.getElementById('btnDelete').style.display = 'inline-block';
+  
+  fieldIds.forEach(id2 => {
+    const val = rec[id2] || '';
+    if (id2 === monthField) {
+      if (/^\d{4}-\d{2}$/.test(val)) {
+        document.getElementById(id2).value = val;
+      } else {
+        const match = String(val).match(/(\d{4})-(\d{2})/);
+        if (match) {
+          document.getElementById(id2).value = `${match[1]}-${match[2]}`;
+        } else {
+          const match2 = String(val).match(/(\d{2})\/(\d{4})/);
+          if (match2) {
+            document.getElementById(id2).value = `${match2[2]}-${match2[1]}`;
+          } else {
+            document.getElementById(id2).value = '';
+          }
+        }
+      }
+    } else if (dateFields.includes(id2)) {
+      document.getElementById(id2).value = formatDateForInput(val);
+    } else {
+      document.getElementById(id2).value = val;
+    }
+  });
+  overlay.classList.add('show');
+}
+
+function closeModal(){ 
+  overlay.classList.remove('show'); 
+  editingId = null;
+}
+
+document.getElementById('btnNew').onclick = openNew;
+document.getElementById('btnCancel').onclick = closeModal;
+overlay.addEventListener('click', e => { if(e.target === overlay) closeModal(); });
+
+// ============================================================
+// DELETE
+// ============================================================
+document.getElementById('btnDelete').onclick = async () => {
+  if(!editingId) return;
+  if(!confirm('Excluir este estagiário? Essa ação não pode ser desfeita.')) return;
+  
+  try {
+    showLoading('Excluindo registro...');
+    const searchId = String(editingId);
+    const deletedRecord = records.find(r => String(r.id) === searchId);
+    records = records.filter(r => String(r.id) !== searchId);
+    saveLocalData();
+    await sendToSheet('delete', { id: searchId, record: deletedRecord });
+    closeModal();
+    render();
+    showToast('Registro excluído com sucesso!');
+  } catch (error) {
+    showToast('Erro ao excluir: ' + error.message, 'error');
+  } finally {
+    hideLoading();
+  }
+};
+
+// ============================================================
+// FORM SUBMIT
+// ============================================================
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const formData = {};
+  fieldIds.forEach(id => formData[id] = document.getElementById(id).value);
+  if(!formData.nome.trim()){ 
+    showToast('Informe o nome do estagiário.', 'error');
+    return; 
+  }
+
+  try {
+    showLoading(editingId ? 'Atualizando registro...' : 'Criando novo registro...');
+    
+    const refDate = getRefDate();
+    const tempRecord = {
+      statusEstagiario: formData.statusEstagiario,
+      inicioContrato: formData.inicioContrato,
+      vencimentoContrato: formData.vencimentoContrato,
+      inicioRenovacao: formData.inicioRenovacao,
+      fimRenovacao: formData.fimRenovacao,
+      terminoCurso: formData.terminoCurso
+    };
+    
+    const statusCalculado = calcularStatus(tempRecord, refDate);
+    const dataToSave = { ...formData, statusContrato: statusCalculado || '' };
+    
+    if(editingId){
+      const searchId = String(editingId);
+      const idx = records.findIndex(r => String(r.id) === searchId);
+      
+      if (idx === -1) {
+        showToast('Registro não encontrado para atualizar.', 'error');
+        return;
+      }
+      
+      const oldRecord = {...records[idx]};
+      records[idx] = {...records[idx], ...dataToSave};
+      saveLocalData();
+      await sendToSheet('update', { id: searchId, oldData: oldRecord, newData: records[idx] });
+      showToast('Registro atualizado com sucesso!');
+    } else {
+      dataToSave.id = 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+      records.push(dataToSave);
+      saveLocalData();
+      await sendToSheet('add', dataToSave);
+      showToast('Novo estagiário adicionado com sucesso!');
+    }
+    
+    closeModal();
+    render();
+    
+  } catch (error) {
+    showToast('Erro ao salvar: ' + error.message, 'error');
+  } finally {
+    hideLoading();
+  }
+});
+
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
+document.getElementById('refDate').addEventListener('change', render);
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('filterStatus').addEventListener('change', render);
+document.getElementById('btnSync').addEventListener('click', syncWithSheet);
+document.getElementById('btnExport').addEventListener('click', exportData);
+
+// ============================================================
+// INIT
+// ============================================================
+function initApp() {
+  const today = new Date();
+  document.getElementById('refDate').value = today.toISOString().slice(0,10);
+  
+  const hasLocal = loadLocalData();
+  if (hasLocal && records.length > 0) {
+    render();
+  }
+  
+  syncWithSheet();
+}
+</script>
+</body>
+</html>
