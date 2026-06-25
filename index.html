@@ -301,6 +301,42 @@
   .sync-status.success{color:#4ADE80; border-color:rgba(74,222,128,.2); background:rgba(74,222,128,.08);}
   .sync-status.error{color:#F87171; border-color:rgba(248,113,113,.2); background:rgba(248,113,113,.08);}
 
+  /* ===== INDICADOR DE ORIGEM ===== */
+  .data-source-indicator{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:11px;
+    padding:4px 12px;
+    border-radius:20px;
+    font-weight:500;
+    margin-left:8px;
+  }
+  .data-source-indicator.from-sheet{
+    background:#DCFCE7;
+    color:#16A34A;
+  }
+  .data-source-indicator.from-sheet::before{
+    content:'●';
+    color:#16A34A;
+  }
+  .data-source-indicator.from-cache{
+    background:#FEF3C7;
+    color:#D97706;
+  }
+  .data-source-indicator.from-cache::before{
+    content:'●';
+    color:#D97706;
+  }
+  .data-source-indicator.error{
+    background:#FEE2E2;
+    color:#DC2626;
+  }
+  .data-source-indicator.error::before{
+    content:'●';
+    color:#DC2626;
+  }
+
   .cards{
     display:grid;
     grid-template-columns:repeat(5,1fr);
@@ -393,6 +429,12 @@
   }
   .toolbar select:focus{
     border-color:var(--accent);
+  }
+  .toolbar .source-group{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    margin-left:auto;
   }
   button{
     font-family:'Inter',sans-serif;
@@ -518,7 +560,6 @@
     background:var(--accent-soft);
   }
 
-  /* ============ PAGINAÇÃO ============ */
   .pagination{
     display:flex;
     align-items:center;
@@ -761,6 +802,7 @@
     .toolbar{flex-direction:column; align-items:stretch;}
     .toolbar input[type=text]{min-width:auto;}
     .toolbar .filter-group{justify-content:space-between;}
+    .toolbar .source-group{margin-left:0; width:100%; justify-content:flex-end;}
     .login-container{padding:32px 24px;}
     .pagination{flex-direction:column; align-items:stretch; text-align:center;}
     .pagination .controls{justify-content:center; flex-wrap:wrap;}
@@ -847,7 +889,7 @@
     </div>
 
     <div class="toolbar">
-      <input type="text" id="search" placeholder="Buscar por nome, CPF, função ou unidade...">
+      <input type="text" id="search" placeholder="Buscar por nome, CPF...">
       <div class="filter-group">
         <label>Status:</label>
         <select id="filterEstagiario">
@@ -869,6 +911,9 @@
       <button class="btn btn-ghost" id="btnSync">Sincronizar</button>
       <button class="btn btn-ghost" id="btnExport">Exportar</button>
       <button class="btn btn-primary" id="btnNew">+ Novo</button>
+      <div class="source-group">
+        <span class="data-source-indicator" id="sourceIndicator">Carregando...</span>
+      </div>
     </div>
 
     <div class="table-wrapper">
@@ -904,8 +949,16 @@
           <div class="field full"><label>Nome</label><input type="text" id="nome" required></div>
           <div class="field"><label>CPF</label><input type="text" id="cpf" placeholder="000.000.000-00"></div>
           <div class="field"><label>Data de admissão</label><input type="date" id="dataAdmissao"></div>
-          <div class="field"><label>Função</label><input type="text" id="funcao"></div>
-          <div class="field"><label>Unidade</label><input type="text" id="unidade"></div>
+          <div class="field"><label>Função</label>
+            <select id="funcao">
+              <option value="">Selecionar função</option>
+            </select>
+          </div>
+          <div class="field"><label>Unidade</label>
+            <select id="unidade">
+              <option value="">Selecionar unidade</option>
+            </select>
+          </div>
           <div class="field"><label>Status do estagiário</label>
             <select id="statusEstagiario">
               <option value="">Selecionar</option>
@@ -958,7 +1011,7 @@ function checkSession() {
         document.getElementById('userName').textContent = data.email;
         const initials = data.email.split('@')[0].substring(0,2).toUpperCase();
         document.getElementById('userAvatar').textContent = initials;
-        initApp();
+        loadDePara().then(() => initApp());
         return true;
       }
     } catch(e) {
@@ -991,7 +1044,8 @@ function doLogin(e) {
     document.getElementById('userName').textContent = email;
     const initials = email.split('@')[0].substring(0,2).toUpperCase();
     document.getElementById('userAvatar').textContent = initials;
-    initApp();
+    
+    loadDePara().then(() => initApp());
   } else {
     errorEl.classList.add('show');
     document.getElementById('loginPassword').value = '';
@@ -1008,7 +1062,7 @@ document.getElementById('loginEmail').addEventListener('keydown', (e) => {
 });
 
 // ============================================================
-// LOGOUT - LIMPA SESSÃO
+// LOGOUT
 // ============================================================
 document.getElementById('logoutBtn').addEventListener('click', () => {
   if (confirm('Deseja realmente sair?')) {
@@ -1022,9 +1076,149 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 });
 
 // ============================================================
+// DePara - Funções e Unidades - SOMENTE DA PLANILHA
+// ============================================================
+let funcoesList = [];
+let unidadesList = [];
+let deparaStatus = 'loading'; // 'loading', 'from-sheet', 'error'
+
+async function loadDePara() {
+  const indicator = document.getElementById('sourceIndicator');
+  indicator.className = 'data-source-indicator';
+  indicator.textContent = 'Carregando...';
+  
+  try {
+    await fetchDeParaFromSheet();
+    deparaStatus = 'from-sheet';
+    indicator.className = 'data-source-indicator from-sheet';
+    indicator.textContent = '✓ Planilha';
+    populateSelects();
+    showToast('Funções e unidades carregadas da planilha!', 'success');
+  } catch (error) {
+    console.error('Erro ao carregar DePara:', error);
+    deparaStatus = 'error';
+    indicator.className = 'data-source-indicator error';
+    indicator.textContent = '✗ Erro ao carregar';
+    
+    // Tenta carregar do cache como fallback
+    const cached = localStorage.getItem('depara_data');
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        if (data.funcoes && data.funcoes.length > 0) {
+          funcoesList = data.funcoes;
+          unidadesList = data.unidades || [];
+          populateSelects();
+          showToast('Usando dados em cache (erro na planilha)', 'error');
+          indicator.className = 'data-source-indicator error';
+          indicator.textContent = '⚠ Cache (erro)';
+          return;
+        }
+      } catch(e) {}
+    }
+    
+    // Se não tem cache, mostra selects vazios
+    populateSelectsEmpty();
+    showToast('Erro ao carregar funções/unidades da planilha', 'error');
+  }
+}
+
+async function fetchDeParaFromSheet() {
+  try {
+    const response = await fetch(API_URL);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    
+    console.log('Dados recebidos da API para DePara:', data);
+    
+    let funcoes = [];
+    let unidades = [];
+    
+    // Tenta extrair de diferentes formatos
+    if (Array.isArray(data)) {
+      data.forEach(row => {
+        // Procura por funções
+        const funcaoVal = row.funcao || row.Funcao || row.funcoes || row.Funcoes || row['Função'] || '';
+        if (funcaoVal && funcaoVal.trim()) {
+          funcoes.push(funcaoVal.trim());
+        }
+        // Procura por unidades
+        const unidadeVal = row.unidade || row.Unidade || row.unidades || row.Unidades || '';
+        if (unidadeVal && unidadeVal.trim()) {
+          unidades.push(unidadeVal.trim());
+        }
+      });
+    } else if (data && typeof data === 'object') {
+      if (data.funcoes && Array.isArray(data.funcoes)) {
+        funcoes = data.funcoes;
+      }
+      if (data.unidades && Array.isArray(data.unidades)) {
+        unidades = data.unidades;
+      }
+      if (data.depara && data.depara.funcoes) {
+        funcoes = data.depara.funcoes;
+        unidades = data.depara.unidades || [];
+      }
+    }
+    
+    // Remove duplicatas e valores vazios
+    funcoes = [...new Set(funcoes.filter(f => f && f.trim()))];
+    unidades = [...new Set(unidades.filter(u => u && u.trim()))];
+    
+    if (funcoes.length === 0 && unidades.length === 0) {
+      throw new Error('Nenhuma função ou unidade encontrada na planilha');
+    }
+    
+    funcoesList = funcoes;
+    unidadesList = unidades;
+    
+    // Salva no cache
+    localStorage.setItem('depara_data', JSON.stringify({
+      funcoes: funcoesList,
+      unidades: unidadesList
+    }));
+    
+    console.log('Funções carregadas:', funcoesList);
+    console.log('Unidades carregadas:', unidadesList);
+    
+  } catch (error) {
+    console.error('Erro ao buscar DePara da planilha:', error);
+    throw error;
+  }
+}
+
+function populateSelects() {
+  const funcaoSelect = document.getElementById('funcao');
+  const unidadeSelect = document.getElementById('unidade');
+  
+  funcaoSelect.innerHTML = '<option value="">Selecionar função</option>';
+  funcoesList.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f;
+    opt.textContent = f;
+    funcaoSelect.appendChild(opt);
+  });
+  
+  unidadeSelect.innerHTML = '<option value="">Selecionar unidade</option>';
+  unidadesList.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u;
+    opt.textContent = u;
+    unidadeSelect.appendChild(opt);
+  });
+}
+
+function populateSelectsEmpty() {
+  const funcaoSelect = document.getElementById('funcao');
+  const unidadeSelect = document.getElementById('unidade');
+  funcaoSelect.innerHTML = '<option value="">Nenhuma função disponível</option>';
+  unidadeSelect.innerHTML = '<option value="">Nenhuma unidade disponível</option>';
+}
+
+// ============================================================
 // CONFIGURACAO
 // ============================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbwIv7Nzxdxbd9JhaUS95Scz1Sz_weg_Pdl6xCBXs0FuBxNyy5nSdXlpsmldx5101voo/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxiopXTQXeijdX3__KI0RAtcSUtRX0bbXX8P0DyyRaYBKHBK9aDwljZ4ja2HyAumi5I/exec';
 
 const FIELD_MAPPING = {
   'Id': 'id',
@@ -1043,7 +1237,6 @@ const FIELD_MAPPING = {
 };
 
 const STORAGE_KEY = 'estagiarios-data';
-const SESSION_KEY = 'estagiarios_session';
 let records = [];
 let editingId = null;
 
@@ -1279,7 +1472,6 @@ function sameMonth(d1, d2){ return d1.getFullYear()===d2.getFullYear() && d1.get
 // STATUS
 // ============================================================
 function calcularStatus(rec, refStr){
-  // Se for DEMITIDO, retorna 'DEMITIDO' sem calcular
   const statusEstagiario = (rec.statusEstagiario||'').toUpperCase();
   if(statusEstagiario === 'DEMITIDO') {
     return 'DEMITIDO';
@@ -1356,24 +1548,30 @@ async function sendToSheet(action, data) {
 }
 
 // ============================================================
-// MAPEAMENTO
+// MAPEAMENTO - IGNORA LINHAS VAZIAS
 // ============================================================
 function mapSheetData(sheetData) {
   if (Array.isArray(sheetData) && sheetData.length > 0) {
-    if (sheetData[0].nome !== undefined) return sheetData;
+    if (sheetData[0].nome !== undefined) {
+      // Filtra registros que têm pelo menos um nome
+      return sheetData.filter(row => row.nome && row.nome.trim() !== '');
+    }
     if (typeof sheetData[0] === 'object') {
-      return sheetData.map(row => {
-        const obj = {};
-        Object.keys(row).forEach(key => {
-          const mappedField = FIELD_MAPPING[key.trim()];
-          if (mappedField) {
-            const value = row[key];
-            obj[mappedField] = mappedField === 'id' ? String(value || '') : (value || '');
-          }
-        });
-        if (!obj.id) obj.id = 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-        return obj;
-      });
+      return sheetData
+        .map(row => {
+          const obj = {};
+          Object.keys(row).forEach(key => {
+            const mappedField = FIELD_MAPPING[key.trim()];
+            if (mappedField) {
+              const value = row[key];
+              obj[mappedField] = mappedField === 'id' ? String(value || '') : (value || '');
+            }
+          });
+          if (!obj.id) obj.id = 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+          return obj;
+        })
+        // FILTRA REGISTROS QUE NÃO TÊM NOME (linhas vazias ou com fórmula)
+        .filter(row => row.nome && row.nome.trim() !== '');
     }
   }
   return [];
@@ -1400,13 +1598,14 @@ async function syncWithSheet() {
       syncStatus.textContent = 'Sincronizado (' + records.length + ' registros)';
       syncStatus.className = 'sync-status success';
       render();
-      showToast('Sincronizado com sucesso!');
+      showToast('Sincronizado com sucesso! ' + records.length + ' registros carregados');
     } else {
       const hasLocal = loadLocalData();
       if (hasLocal && records.length > 0) {
         syncStatus.textContent = 'Cache (' + records.length + ' registros)';
         syncStatus.className = 'sync-status error';
         render();
+        showToast('Usando dados em cache', 'error');
       } else {
         syncStatus.textContent = 'Sem dados';
         syncStatus.className = 'sync-status error';
@@ -1438,7 +1637,12 @@ async function syncWithSheet() {
 function loadLocalData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) { records = JSON.parse(raw); return true; }
+    if (raw) { 
+      const parsed = JSON.parse(raw);
+      // Filtra registros vazios do cache também
+      records = parsed.filter(r => r.nome && r.nome.trim() !== '');
+      return records.length > 0;
+    }
   } catch(e) {}
   return false;
 }
@@ -1464,7 +1668,7 @@ function exportData(){
 }
 
 // ============================================================
-// RENDER - COM FILTROS SEPARADOS
+// RENDER
 // ============================================================
 function getRefDate(){ return document.getElementById('refDate').value; }
 
@@ -1474,11 +1678,10 @@ function render(){
   const filterEstagiario = document.getElementById('filterEstagiario').value;
   const filterContrato = document.getElementById('filterContrato').value;
 
-  // Primeiro, enriquece todos os registros com o status calculado
   const enriched = records.map(r => ({...r, _status: calcularStatus(r, ref)}));
 
-  // ===== CARDS - Exclui DEMITIDOS das estatísticas =====
-  const activeRecords = enriched.filter(r => r._status !== 'DEMITIDO');
+  // ===== CARDS =====
+  const activeRecords = enriched.filter(r => r._status !== 'DEMITIDO' && r._status !== '');
   
   const counts = {OK:0, RENOVAR:0, 'DEMITIR/EFETIVAR':0, 'SEM CONTRATO':0};
   activeRecords.forEach(r => { 
@@ -1486,7 +1689,6 @@ function render(){
   });
   
   const totalAtivos = activeRecords.length;
-  const totalDemitidos = enriched.filter(r => r._status === 'DEMITIDO').length;
   const totalGeral = records.length;
   
   document.getElementById('cards').innerHTML = `
@@ -1497,16 +1699,13 @@ function render(){
     <div class="card c-neutral"><div class="num">${totalAtivos}</div><div class="lbl">ATIVOS</div></div>
   `;
 
-  // ===== FILTROS SEPARADOS =====
+  // ===== FILTROS =====
   filteredList = enriched.filter(r => {
-    // 1. Filtro por Status do Estagiário (ATIVO / DEMITIDO / TODOS)
+    if (!r.nome || r.nome.trim() === '') return false;
+    
     if (filterEstagiario === 'ATIVO' && r._status === 'DEMITIDO') return false;
     if (filterEstagiario === 'DEMITIDO' && r._status !== 'DEMITIDO') return false;
-    
-    // 2. Filtro por Status do Contrato (OK / RENOVAR / DEMITIR/EFETIVAR / SEM CONTRATO / TODOS)
     if (filterContrato && r._status !== filterContrato) return false;
-    
-    // 3. Filtro de busca
     if(search){
       const hay = `${r.nome||''} ${r.cpf||''} ${r.funcao||''} ${r.unidade||''}`.toLowerCase();
       if(!hay.includes(search)) return false;
@@ -1602,7 +1801,28 @@ function openEdit(id){
   
   fieldIds.forEach(id2 => {
     const val = rec[id2] || '';
-    if (id2 === monthField) {
+    if (id2 === 'funcao' || id2 === 'unidade') {
+      const select = document.getElementById(id2);
+      if (val) {
+        let found = false;
+        for (let opt of select.options) {
+          if (opt.value === val) {
+            opt.selected = true;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = val;
+          select.appendChild(opt);
+          select.value = val;
+        }
+      } else {
+        select.value = '';
+      }
+    } else if (id2 === monthField) {
       if (/^\d{4}-\d{2}$/.test(val)) {
         document.getElementById(id2).value = val;
       } else {
@@ -1687,7 +1907,23 @@ form.addEventListener('submit', async (e) => {
     };
     
     const statusCalculado = calcularStatus(tempRecord, refDate);
-    const dataToSave = { ...formData, statusContrato: statusCalculado || '' };
+    
+    const dataToSave = {
+      id: formData.id || '',
+      nome: formData.nome,
+      cpf: formData.cpf,
+      dataAdmissao: formData.dataAdmissao,
+      funcao: formData.funcao,
+      unidade: formData.unidade,
+      inicioContrato: formData.inicioContrato,
+      vencimentoContrato: formData.vencimentoContrato,
+      inicioRenovacao: formData.inicioRenovacao,
+      fimRenovacao: formData.fimRenovacao,
+      terminoCurso: formData.terminoCurso,
+      statusContrato: statusCalculado || ''
+    };
+    
+    const localData = { ...dataToSave, statusEstagiario: formData.statusEstagiario };
     
     if(editingId){
       const searchId = String(editingId);
@@ -1698,15 +1934,23 @@ form.addEventListener('submit', async (e) => {
         return;
       }
       
-      const oldRecord = {...records[idx]};
-      records[idx] = {...records[idx], ...dataToSave};
+      records[idx] = { ...records[idx], ...localData };
       saveLocalData();
-      await sendToSheet('update', { id: searchId, oldData: oldRecord, newData: records[idx] });
+      
+      await sendToSheet('update', { 
+        id: searchId, 
+        oldData: records[idx], 
+        newData: dataToSave
+      });
       showToast('Registro atualizado com sucesso!');
     } else {
-      dataToSave.id = 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-      records.push(dataToSave);
+      const newId = 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+      localData.id = newId;
+      dataToSave.id = newId;
+      
+      records.push(localData);
       saveLocalData();
+      
       await sendToSheet('add', dataToSave);
       showToast('Novo estagiário adicionado com sucesso!');
     }
@@ -1747,7 +1991,7 @@ function initApp() {
 }
 
 // ============================================================
-// START - Verifica sessão primeiro
+// START
 // ============================================================
 if (!checkSession()) {
   document.getElementById('loginPage').style.display = 'flex';
