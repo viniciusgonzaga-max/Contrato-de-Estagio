@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
+  /* ===== TODO O CSS PERMANECE IGUAL AO SEU CODIGO ORIGINAL ===== */
   :root{
     --bg:#F8F9FB;
     --surface:#FFFFFF;
@@ -301,7 +302,6 @@
   .sync-status.success{color:#4ADE80; border-color:rgba(74,222,128,.2); background:rgba(74,222,128,.08);}
   .sync-status.error{color:#F87171; border-color:rgba(248,113,113,.2); background:rgba(248,113,113,.08);}
 
-  /* ===== INDICADOR DE ORIGEM ===== */
   .data-source-indicator{
     display:inline-flex;
     align-items:center;
@@ -920,7 +920,6 @@
       <div id="tableHolder"></div>
     </div>
 
-    <!-- ============ PAGINAÇÃO ============ -->
     <div class="pagination" id="pagination">
       <div class="info">
         Mostrando <strong id="pageStart">1</strong> a <strong id="pageEnd">10</strong> de <strong id="totalRecords">0</strong> registros
@@ -991,7 +990,7 @@
 
 <script>
 // ============================================================
-// LOGIN - COM PERSISTÊNCIA
+// LOGIN - COM PERSISTÊNCIA (MANTIDO IGUAL AO ORIGINAL)
 // ============================================================
 const LOGIN_CREDENTIALS = {
   email: 'dp@rededecisao.com.br',
@@ -1080,7 +1079,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 // ============================================================
 let funcoesList = [];
 let unidadesList = [];
-let deparaStatus = 'loading'; // 'loading', 'from-sheet', 'error'
+let deparaStatus = 'loading';
 
 async function loadDePara() {
   const indicator = document.getElementById('sourceIndicator');
@@ -1100,7 +1099,6 @@ async function loadDePara() {
     indicator.className = 'data-source-indicator error';
     indicator.textContent = '✗ Erro ao carregar';
     
-    // Tenta carregar do cache como fallback
     const cached = localStorage.getItem('depara_data');
     if (cached) {
       try {
@@ -1117,7 +1115,6 @@ async function loadDePara() {
       } catch(e) {}
     }
     
-    // Se não tem cache, mostra selects vazios
     populateSelectsEmpty();
     showToast('Erro ao carregar funções/unidades da planilha', 'error');
   }
@@ -1134,15 +1131,12 @@ async function fetchDeParaFromSheet() {
     let funcoes = [];
     let unidades = [];
     
-    // Tenta extrair de diferentes formatos
     if (Array.isArray(data)) {
       data.forEach(row => {
-        // Procura por funções
         const funcaoVal = row.funcao || row.Funcao || row.funcoes || row.Funcoes || row['Função'] || '';
         if (funcaoVal && funcaoVal.trim()) {
           funcoes.push(funcaoVal.trim());
         }
-        // Procura por unidades
         const unidadeVal = row.unidade || row.Unidade || row.unidades || row.Unidades || '';
         if (unidadeVal && unidadeVal.trim()) {
           unidades.push(unidadeVal.trim());
@@ -1161,7 +1155,6 @@ async function fetchDeParaFromSheet() {
       }
     }
     
-    // Remove duplicatas e valores vazios
     funcoes = [...new Set(funcoes.filter(f => f && f.trim()))];
     unidades = [...new Set(unidades.filter(u => u && u.trim()))];
     
@@ -1172,7 +1165,6 @@ async function fetchDeParaFromSheet() {
     funcoesList = funcoes;
     unidadesList = unidades;
     
-    // Salva no cache
     localStorage.setItem('depara_data', JSON.stringify({
       funcoes: funcoesList,
       unidades: unidadesList
@@ -1553,7 +1545,6 @@ async function sendToSheet(action, data) {
 function mapSheetData(sheetData) {
   if (Array.isArray(sheetData) && sheetData.length > 0) {
     if (sheetData[0].nome !== undefined) {
-      // Filtra registros que têm pelo menos um nome
       return sheetData.filter(row => row.nome && row.nome.trim() !== '');
     }
     if (typeof sheetData[0] === 'object') {
@@ -1570,7 +1561,6 @@ function mapSheetData(sheetData) {
           if (!obj.id) obj.id = 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
           return obj;
         })
-        // FILTRA REGISTROS QUE NÃO TÊM NOME (linhas vazias ou com fórmula)
         .filter(row => row.nome && row.nome.trim() !== '');
     }
   }
@@ -1639,7 +1629,6 @@ function loadLocalData() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) { 
       const parsed = JSON.parse(raw);
-      // Filtra registros vazios do cache também
       records = parsed.filter(r => r.nome && r.nome.trim() !== '');
       return records.length > 0;
     }
@@ -1680,7 +1669,6 @@ function render(){
 
   const enriched = records.map(r => ({...r, _status: calcularStatus(r, ref)}));
 
-  // ===== CARDS =====
   const activeRecords = enriched.filter(r => r._status !== 'DEMITIDO' && r._status !== '');
   
   const counts = {OK:0, RENOVAR:0, 'DEMITIR/EFETIVAR':0, 'SEM CONTRATO':0};
@@ -1699,7 +1687,6 @@ function render(){
     <div class="card c-neutral"><div class="num">${totalAtivos}</div><div class="lbl">ATIVOS</div></div>
   `;
 
-  // ===== FILTROS =====
   filteredList = enriched.filter(r => {
     if (!r.nome || r.nome.trim() === '') return false;
     
@@ -1770,7 +1757,7 @@ function renderTable() {
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // ============================================================
-// MODAL
+// MODAL - CORRIGIDO (mantendo o mesmo estilo do original)
 // ============================================================
 const overlay = document.getElementById('overlay');
 const form = document.getElementById('form');
@@ -1788,14 +1775,21 @@ function openNew(){
 
 function openEdit(id){
   const searchId = String(id);
+  console.log('🔍 Buscando registro com ID:', searchId);
+  
   const rec = records.find(r => String(r.id) === searchId);
   
   if(!rec) {
-    showToast('Registro não encontrado. ID: ' + searchId, 'error');
+    showToast('❌ Registro não encontrado. ID: ' + searchId, 'error');
+    console.error('❌ Registro não encontrado para ID:', searchId);
     return;
   }
   
+  console.log('✅ Registro encontrado:', rec);
+  
+  // GUARDA O ID CORRETAMENTE
   editingId = rec.id;
+  
   document.getElementById('modalTitle').textContent = 'Editar estagiário';
   document.getElementById('btnDelete').style.display = 'inline-block';
   
@@ -1857,10 +1851,13 @@ document.getElementById('btnCancel').onclick = closeModal;
 overlay.addEventListener('click', e => { if(e.target === overlay) closeModal(); });
 
 // ============================================================
-// DELETE
+// DELETE - CORRIGIDO
 // ============================================================
 document.getElementById('btnDelete').onclick = async () => {
-  if(!editingId) return;
+  if(!editingId) {
+    showToast('Nenhum registro selecionado para excluir', 'error');
+    return;
+  }
   if(!confirm('Excluir este estagiário? Essa ação não pode ser desfeita.')) return;
   
   try {
@@ -1881,7 +1878,7 @@ document.getElementById('btnDelete').onclick = async () => {
 };
 
 // ============================================================
-// FORM SUBMIT
+// FORM SUBMIT - CORRIGIDO (mantendo o mesmo estilo do original)
 // ============================================================
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -1894,6 +1891,9 @@ form.addEventListener('submit', async (e) => {
   }
 
   try {
+    console.log('📝 editingId atual:', editingId);
+    console.log('📝 formData:', formData);
+    
     showLoading(editingId ? 'Atualizando registro...' : 'Criando novo registro...');
     
     const refDate = getRefDate();
@@ -1925,25 +1925,39 @@ form.addEventListener('submit', async (e) => {
     
     const localData = { ...dataToSave, statusEstagiario: formData.statusEstagiario };
     
+    // SE TEM editingId, É UPDATE
     if(editingId){
       const searchId = String(editingId);
+      console.log('🔄 Atualizando registro com ID:', searchId);
+      
       const idx = records.findIndex(r => String(r.id) === searchId);
+      console.log('📋 Índice encontrado:', idx);
       
       if (idx === -1) {
-        showToast('Registro não encontrado para atualizar.', 'error');
+        showToast('Registro não encontrado para atualizar. ID: ' + searchId, 'error');
         return;
       }
       
+      // MANTÉM O ID ORIGINAL
+      localData.id = records[idx].id;
+      dataToSave.id = records[idx].id;
+      
+      const oldRecord = {...records[idx]};
       records[idx] = { ...records[idx], ...localData };
       saveLocalData();
       
+      console.log('📤 Enviando update com ID:', searchId);
+      
       await sendToSheet('update', { 
         id: searchId, 
-        oldData: records[idx], 
+        oldData: oldRecord, 
         newData: dataToSave
       });
+      
       showToast('Registro atualizado com sucesso!');
     } else {
+      // ADICIONA NOVO
+      console.log('➕ Criando novo registro');
       const newId = 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
       localData.id = newId;
       dataToSave.id = newId;
@@ -1959,6 +1973,7 @@ form.addEventListener('submit', async (e) => {
     render();
     
   } catch (error) {
+    console.error('❌ Erro ao salvar:', error);
     showToast('Erro ao salvar: ' + error.message, 'error');
   } finally {
     hideLoading();
