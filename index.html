@@ -158,6 +158,24 @@
     letter-spacing:.5px;
     opacity:.6;
   }
+  .remember-me{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:4px;
+  }
+  .remember-me input[type="checkbox"]{
+    width:16px;
+    height:16px;
+    accent-color:var(--accent);
+    cursor:pointer;
+  }
+  .remember-me label{
+    font-size:12px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    margin-bottom:0;
+  }
 
   /* ============ MAIN APP ============ */
   .app-container{
@@ -478,6 +496,79 @@
     background:var(--accent-soft);
   }
 
+  /* ============ PAGINAÇÃO ============ */
+  .pagination{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 16px;
+    background:var(--surface);
+    border-radius:0 0 var(--radius) var(--radius);
+    border:1px solid var(--line);
+    border-top:none;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .pagination .info{
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .pagination .info strong{
+    color:var(--ink);
+  }
+  .pagination .controls{
+    display:flex;
+    gap:6px;
+    align-items:center;
+  }
+  .pagination .controls button{
+    padding:6px 12px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:var(--surface);
+    color:var(--ink);
+    font-size:13px;
+    cursor:pointer;
+    transition:all .2s;
+    font-weight:500;
+  }
+  .pagination .controls button:hover:not(:disabled){
+    border-color:var(--accent);
+    color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .pagination .controls button:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+  }
+  .pagination .controls button.active{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+  .pagination .controls .page-numbers{
+    display:flex;
+    gap:4px;
+  }
+  .pagination .controls .page-numbers button{
+    min-width:32px;
+    text-align:center;
+  }
+  .pagination select{
+    padding:6px 10px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:var(--surface);
+    font-size:13px;
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    outline:none;
+    cursor:pointer;
+  }
+  .pagination select:focus{
+    border-color:var(--accent);
+  }
+
   .empty{
     padding:50px 20px;
     text-align:center;
@@ -648,6 +739,8 @@
     .toolbar{flex-direction:column; align-items:stretch;}
     .toolbar input[type=text]{min-width:auto;}
     .login-container{padding:32px 24px;}
+    .pagination{flex-direction:column; align-items:stretch; text-align:center;}
+    .pagination .controls{justify-content:center; flex-wrap:wrap;}
   }
   @media (max-width: 500px){
     .cards{grid-template-columns:1fr 1fr;}
@@ -655,6 +748,7 @@
     .modal{padding:20px;}
     header.top{padding:16px;}
     .login-container{padding:24px 16px;}
+    .pagination .controls .page-numbers button{min-width:28px; font-size:12px; padding:4px 8px;}
   }
 </style>
 </head>
@@ -676,6 +770,10 @@
       <div class="field-group">
         <label>Senha</label>
         <input type="password" id="loginPassword" placeholder="Digite sua senha">
+      </div>
+      <div class="remember-me">
+        <input type="checkbox" id="rememberMe" checked>
+        <label for="rememberMe">Manter conectado</label>
       </div>
       <button type="submit" class="login-btn">Entrar</button>
       <div class="login-error" id="loginError">E-mail ou senha incorretos</div>
@@ -741,6 +839,24 @@
     <div class="table-wrapper">
       <div id="tableHolder"></div>
     </div>
+
+    <!-- ============ PAGINAÇÃO ============ -->
+    <div class="pagination" id="pagination">
+      <div class="info">
+        Mostrando <strong id="pageStart">1</strong> a <strong id="pageEnd">10</strong> de <strong id="totalRecords">0</strong> registros
+      </div>
+      <div class="controls">
+        <button id="prevPage" disabled>Anterior</button>
+        <div class="page-numbers" id="pageNumbers"></div>
+        <button id="nextPage">Próximo</button>
+        <select id="pageSize">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <!-- MODAL -->
@@ -787,21 +903,54 @@
 
 <script>
 // ============================================================
-// LOGIN
+// LOGIN - COM PERSISTÊNCIA
 // ============================================================
 const LOGIN_CREDENTIALS = {
   email: 'dp@rededecisao.com.br',
   password: 'Rede2026@'
 };
 
+// Verifica se o usuário já está logado
+function checkSession() {
+  const session = localStorage.getItem('estagiarios_session');
+  if (session) {
+    try {
+      const data = JSON.parse(session);
+      const now = Date.now();
+      if (data.expires > now) {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('appContainer').classList.add('active');
+        document.getElementById('userName').textContent = data.email;
+        const initials = data.email.split('@')[0].substring(0,2).toUpperCase();
+        document.getElementById('userAvatar').textContent = initials;
+        initApp();
+        return true;
+      }
+    } catch(e) {
+      localStorage.removeItem('estagiarios_session');
+    }
+  }
+  return false;
+}
+
 function doLogin(e) {
   e.preventDefault();
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
+  const rememberMe = document.getElementById('rememberMe').checked;
   const errorEl = document.getElementById('loginError');
 
   if (email === LOGIN_CREDENTIALS.email && password === LOGIN_CREDENTIALS.password) {
     errorEl.classList.remove('show');
+    
+    if (rememberMe) {
+      const session = {
+        email: email,
+        expires: Date.now() + (7 * 24 * 60 * 60 * 1000)
+      };
+      localStorage.setItem('estagiarios_session', JSON.stringify(session));
+    }
+    
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('appContainer').classList.add('active');
     document.getElementById('userName').textContent = email;
@@ -824,10 +973,11 @@ document.getElementById('loginEmail').addEventListener('keydown', (e) => {
 });
 
 // ============================================================
-// LOGOUT
+// LOGOUT - LIMPA SESSÃO
 // ============================================================
 document.getElementById('logoutBtn').addEventListener('click', () => {
   if (confirm('Deseja realmente sair?')) {
+    localStorage.removeItem('estagiarios_session');
     document.getElementById('appContainer').classList.remove('active');
     document.getElementById('loginPage').style.display = 'flex';
     document.getElementById('loginPassword').value = '';
@@ -858,8 +1008,118 @@ const FIELD_MAPPING = {
 };
 
 const STORAGE_KEY = 'estagiarios-data';
+const SESSION_KEY = 'estagiarios_session';
 let records = [];
 let editingId = null;
+
+// ============================================================
+// PAGINAÇÃO
+// ============================================================
+let currentPage = 1;
+let pageSize = 10;
+let filteredList = [];
+
+function renderPagination(totalItems) {
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  
+  if (currentPage > totalPages) {
+    currentPage = totalPages;
+  }
+  
+  const start = (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, totalItems);
+  
+  document.getElementById('pageStart').textContent = totalItems === 0 ? 0 : start;
+  document.getElementById('pageEnd').textContent = end;
+  document.getElementById('totalRecords').textContent = totalItems;
+  
+  document.getElementById('prevPage').disabled = currentPage <= 1;
+  document.getElementById('nextPage').disabled = currentPage >= totalPages;
+  
+  const pageNumbers = document.getElementById('pageNumbers');
+  pageNumbers.innerHTML = '';
+  
+  let startPage = Math.max(1, currentPage - 2);
+  let endPage = Math.min(totalPages, currentPage + 2);
+  
+  if (endPage - startPage < 4) {
+    if (startPage === 1) endPage = Math.min(totalPages, startPage + 4);
+    if (endPage === totalPages) startPage = Math.max(1, endPage - 4);
+  }
+  
+  if (startPage > 1) {
+    const btn = document.createElement('button');
+    btn.textContent = '1';
+    btn.dataset.page = 1;
+    btn.addEventListener('click', () => goToPage(1));
+    pageNumbers.appendChild(btn);
+    if (startPage > 2) {
+      const dots = document.createElement('span');
+      dots.textContent = '…';
+      dots.style.cssText = 'padding:0 4px;color:var(--ink-soft);';
+      pageNumbers.appendChild(dots);
+    }
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    btn.dataset.page = i;
+    if (i === currentPage) {
+      btn.className = 'active';
+    }
+    btn.addEventListener('click', () => goToPage(i));
+    pageNumbers.appendChild(btn);
+  }
+  
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      const dots = document.createElement('span');
+      dots.textContent = '…';
+      dots.style.cssText = 'padding:0 4px;color:var(--ink-soft);';
+      pageNumbers.appendChild(dots);
+    }
+    const btn = document.createElement('button');
+    btn.textContent = totalPages;
+    btn.dataset.page = totalPages;
+    btn.addEventListener('click', () => goToPage(totalPages));
+    pageNumbers.appendChild(btn);
+  }
+}
+
+function goToPage(page) {
+  const totalPages = Math.ceil(filteredList.length / pageSize) || 1;
+  
+  if (page < 1) page = 1;
+  if (page > totalPages) page = totalPages;
+  
+  if (currentPage !== page) {
+    currentPage = page;
+    renderTable();
+    renderPagination(filteredList.length);
+    
+    const tableWrapper = document.querySelector('.table-wrapper');
+    if (tableWrapper) {
+      tableWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+}
+
+document.getElementById('prevPage').addEventListener('click', () => {
+  if (currentPage > 1) goToPage(currentPage - 1);
+});
+
+document.getElementById('nextPage').addEventListener('click', () => {
+  const totalPages = Math.ceil(filteredList.length / pageSize);
+  if (currentPage < totalPages) goToPage(currentPage + 1);
+});
+
+document.getElementById('pageSize').addEventListener('change', (e) => {
+  pageSize = parseInt(e.target.value);
+  currentPage = 1;
+  renderTable();
+  renderPagination(filteredList.length);
+});
 
 // ============================================================
 // TOAST
@@ -1164,7 +1424,7 @@ function exportData(){
 }
 
 // ============================================================
-// RENDER
+// RENDER - COM PAGINAÇÃO CORRIGIDA
 // ============================================================
 function getRefDate(){ return document.getElementById('refDate').value; }
 
@@ -1186,7 +1446,7 @@ function render(){
     <div class="card c-neutral"><div class="num">${counts['SEM CONTRATO']}</div><div class="lbl">SEM CONTRATO</div></div>
   `;
 
-  let list = enriched.filter(r => {
+  filteredList = enriched.filter(r => {
     if(filter && r._status !== filter) return false;
     if(search){
       const hay = `${r.nome||''} ${r.cpf||''} ${r.funcao||''} ${r.unidade||''}`.toLowerCase();
@@ -1195,16 +1455,26 @@ function render(){
     return true;
   });
 
+  filteredList.sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
+
+  currentPage = 1;
+  renderPagination(filteredList.length);
+  renderTable();
+}
+
+function renderTable() {
   const holder = document.getElementById('tableHolder');
-  if(list.length === 0){
+  const start = (currentPage - 1) * pageSize;
+  const end = start + pageSize;
+  const pageItems = filteredList.slice(start, end);
+
+  if (filteredList.length === 0){
     holder.innerHTML = `<div class="empty">
       <div class="big">—</div>
       <div>${records.length === 0 ? 'Nenhum estagiário cadastrado ainda. Clique em "Novo estagiário" para começar.' : 'Nenhum registro encontrado para esse filtro.'}</div>
     </div>`;
     return;
   }
-
-  list.sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
 
   holder.innerHTML = `
     <table>
@@ -1215,7 +1485,7 @@ function render(){
         </tr>
       </thead>
       <tbody>
-        ${list.map(r => `
+        ${pageItems.map(r => `
           <tr data-id="${r.id}">
             <td class="nome" data-label="Nome">${escapeHtml(r.nome||'—')}</td>
             <td class="muted" data-label="CPF">${escapeHtml(r.cpf||'—')}</td>
@@ -1411,6 +1681,13 @@ function initApp() {
   }
   
   syncWithSheet();
+}
+
+// ============================================================
+// START - Verifica sessão primeiro
+// ============================================================
+if (!checkSession()) {
+  document.getElementById('loginPage').style.display = 'flex';
 }
 </script>
 </body>
