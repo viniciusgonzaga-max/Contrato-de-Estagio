@@ -369,6 +369,19 @@
     border-color:var(--accent);
     box-shadow:0 0 0 3px rgba(255,31,45,.1);
   }
+  .toolbar .filter-group{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .toolbar .filter-group label{
+    font-size:11px;
+    font-weight:600;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
   .toolbar select{
     padding:9px 12px;
     border:1px solid var(--line);
@@ -457,6 +470,14 @@
     font-family:'JetBrains Mono',monospace;
     font-size:12px;
   }
+  .td-demitido{
+    opacity:0.6;
+    background:#F9FAFB;
+  }
+  .td-demitido .nome{
+    text-decoration:line-through;
+    color:var(--ink-soft);
+  }
 
   .pill{
     display:inline-flex;
@@ -478,6 +499,7 @@
   .pill.warn{background:var(--warn-bg); color:var(--warn-fg);} .pill.warn::before{background:var(--warn-fg);}
   .pill.danger{background:var(--danger-bg); color:var(--danger-fg);} .pill.danger::before{background:var(--danger-fg);}
   .pill.neutral{background:var(--neutral-bg); color:var(--neutral-fg);} .pill.neutral::before{background:var(--neutral-fg);}
+  .pill.demitido{background:#F3F4F6; color:#9CA3AF;} .pill.demitido::before{background:#9CA3AF;}
 
   .row-actions{display:flex; gap:6px;}
   .icon-btn{
@@ -738,6 +760,7 @@
     .ref-date{flex:1;}
     .toolbar{flex-direction:column; align-items:stretch;}
     .toolbar input[type=text]{min-width:auto;}
+    .toolbar .filter-group{justify-content:space-between;}
     .login-container{padding:32px 24px;}
     .pagination{flex-direction:column; align-items:stretch; text-align:center;}
     .pagination .controls{justify-content:center; flex-wrap:wrap;}
@@ -820,17 +843,29 @@
       <span><i style="background:var(--warn-fg)"></i> RENOVAR — iniciar renovação</span>
       <span><i style="background:var(--danger-fg)"></i> DEMITIR/EFETIVAR — decisão necessária</span>
       <span><i style="background:var(--neutral-fg)"></i> SEM CONTRATO — sem início de contrato cadastrado</span>
+      <span><i style="background:#9CA3AF"></i> DEMITIDO — apenas histórico</span>
     </div>
 
     <div class="toolbar">
       <input type="text" id="search" placeholder="Buscar por nome, CPF, função ou unidade...">
-      <select id="filterStatus">
-        <option value="">Todos os status</option>
-        <option value="OK">OK</option>
-        <option value="RENOVAR">RENOVAR</option>
-        <option value="DEMITIR/EFETIVAR">DEMITIR/EFETIVAR</option>
-        <option value="SEM CONTRATO">SEM CONTRATO</option>
-      </select>
+      <div class="filter-group">
+        <label>Status:</label>
+        <select id="filterEstagiario">
+          <option value="">Todos</option>
+          <option value="ATIVO">Ativos</option>
+          <option value="DEMITIDO">Demitidos</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Contrato:</label>
+        <select id="filterContrato">
+          <option value="">Todos</option>
+          <option value="OK">OK</option>
+          <option value="RENOVAR">RENOVAR</option>
+          <option value="DEMITIR/EFETIVAR">DEMITIR/EFETIVAR</option>
+          <option value="SEM CONTRATO">SEM CONTRATO</option>
+        </select>
+      </div>
       <button class="btn btn-ghost" id="btnSync">Sincronizar</button>
       <button class="btn btn-ghost" id="btnExport">Exportar</button>
       <button class="btn btn-primary" id="btnNew">+ Novo</button>
@@ -1244,8 +1279,12 @@ function sameMonth(d1, d2){ return d1.getFullYear()===d2.getFullYear() && d1.get
 // STATUS
 // ============================================================
 function calcularStatus(rec, refStr){
+  // Se for DEMITIDO, retorna 'DEMITIDO' sem calcular
   const statusEstagiario = (rec.statusEstagiario||'').toUpperCase();
-  if(statusEstagiario === 'DEMITIDO') return '';
+  if(statusEstagiario === 'DEMITIDO') {
+    return 'DEMITIDO';
+  }
+  
   if(!statusEstagiario) return '';
   if(!rec.inicioContrato) return 'SEM CONTRATO';
 
@@ -1281,6 +1320,7 @@ function pillClass(status){
   if(status === 'RENOVAR') return 'warn';
   if(status === 'DEMITIR/EFETIVAR') return 'danger';
   if(status === 'SEM CONTRATO') return 'neutral';
+  if(status === 'DEMITIDO') return 'demitido';
   return 'neutral';
 }
 
@@ -1424,30 +1464,49 @@ function exportData(){
 }
 
 // ============================================================
-// RENDER - COM PAGINAÇÃO CORRIGIDA
+// RENDER - COM FILTROS SEPARADOS
 // ============================================================
 function getRefDate(){ return document.getElementById('refDate').value; }
 
 function render(){
   const ref = getRefDate();
   const search = document.getElementById('search').value.trim().toLowerCase();
-  const filter = document.getElementById('filterStatus').value;
+  const filterEstagiario = document.getElementById('filterEstagiario').value;
+  const filterContrato = document.getElementById('filterContrato').value;
 
+  // Primeiro, enriquece todos os registros com o status calculado
   const enriched = records.map(r => ({...r, _status: calcularStatus(r, ref)}));
 
+  // ===== CARDS - Exclui DEMITIDOS das estatísticas =====
+  const activeRecords = enriched.filter(r => r._status !== 'DEMITIDO');
+  
   const counts = {OK:0, RENOVAR:0, 'DEMITIR/EFETIVAR':0, 'SEM CONTRATO':0};
-  enriched.forEach(r => { if(counts[r._status] !== undefined) counts[r._status]++; });
+  activeRecords.forEach(r => { 
+    if(counts[r._status] !== undefined) counts[r._status]++; 
+  });
+  
+  const totalAtivos = activeRecords.length;
+  const totalDemitidos = enriched.filter(r => r._status === 'DEMITIDO').length;
+  const totalGeral = records.length;
   
   document.getElementById('cards').innerHTML = `
-    <div class="card c-total"><div class="num">${enriched.length}</div><div class="lbl">TOTAL CADASTRADOS</div></div>
+    <div class="card c-total"><div class="num">${totalGeral}</div><div class="lbl">TOTAL REGISTROS</div></div>
     <div class="card c-ok"><div class="num">${counts.OK}</div><div class="lbl">OK</div></div>
     <div class="card c-warn"><div class="num">${counts.RENOVAR}</div><div class="lbl">RENOVAR</div></div>
     <div class="card c-danger"><div class="num">${counts['DEMITIR/EFETIVAR']}</div><div class="lbl">DEMITIR / EFETIVAR</div></div>
-    <div class="card c-neutral"><div class="num">${counts['SEM CONTRATO']}</div><div class="lbl">SEM CONTRATO</div></div>
+    <div class="card c-neutral"><div class="num">${totalAtivos}</div><div class="lbl">ATIVOS</div></div>
   `;
 
+  // ===== FILTROS SEPARADOS =====
   filteredList = enriched.filter(r => {
-    if(filter && r._status !== filter) return false;
+    // 1. Filtro por Status do Estagiário (ATIVO / DEMITIDO / TODOS)
+    if (filterEstagiario === 'ATIVO' && r._status === 'DEMITIDO') return false;
+    if (filterEstagiario === 'DEMITIDO' && r._status !== 'DEMITIDO') return false;
+    
+    // 2. Filtro por Status do Contrato (OK / RENOVAR / DEMITIR/EFETIVAR / SEM CONTRATO / TODOS)
+    if (filterContrato && r._status !== filterContrato) return false;
+    
+    // 3. Filtro de busca
     if(search){
       const hay = `${r.nome||''} ${r.cpf||''} ${r.funcao||''} ${r.unidade||''}`.toLowerCase();
       if(!hay.includes(search)) return false;
@@ -1471,7 +1530,7 @@ function renderTable() {
   if (filteredList.length === 0){
     holder.innerHTML = `<div class="empty">
       <div class="big">—</div>
-      <div>${records.length === 0 ? 'Nenhum estagiário cadastrado ainda. Clique em "Novo estagiário" para começar.' : 'Nenhum registro encontrado para esse filtro.'}</div>
+      <div>${records.length === 0 ? 'Nenhum estagiário cadastrado ainda. Clique em "Novo estagiário" para começar.' : 'Nenhum registro encontrado para esses filtros.'}</div>
     </div>`;
     return;
   }
@@ -1485,8 +1544,10 @@ function renderTable() {
         </tr>
       </thead>
       <tbody>
-        ${pageItems.map(r => `
-          <tr data-id="${r.id}">
+        ${pageItems.map(r => {
+          const isDemitido = r._status === 'DEMITIDO';
+          return `
+          <tr data-id="${r.id}" class="${isDemitido ? 'td-demitido' : ''}">
             <td class="nome" data-label="Nome">${escapeHtml(r.nome||'—')}</td>
             <td class="muted" data-label="CPF">${escapeHtml(r.cpf||'—')}</td>
             <td data-label="Função">${escapeHtml(r.funcao||'—')}</td>
@@ -1500,7 +1561,8 @@ function renderTable() {
               </div>
             </td>
           </tr>
-        `).join('')}
+          `;
+        }).join('')}
       </tbody>
     </table>
   `;
@@ -1664,7 +1726,8 @@ form.addEventListener('submit', async (e) => {
 // ============================================================
 document.getElementById('refDate').addEventListener('change', render);
 document.getElementById('search').addEventListener('input', render);
-document.getElementById('filterStatus').addEventListener('change', render);
+document.getElementById('filterEstagiario').addEventListener('change', render);
+document.getElementById('filterContrato').addEventListener('change', render);
 document.getElementById('btnSync').addEventListener('click', syncWithSheet);
 document.getElementById('btnExport').addEventListener('click', exportData);
 
